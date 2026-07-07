@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { AgendaDto, ScheduleBlockDto, UserDto } from "@vdv/shared";
 import { api } from "../api";
 
@@ -8,8 +8,8 @@ const HOUR_END = 21;
 const PX_PER_MIN = 0.9;
 const SNAP = 15;
 
-function mondayOf(d: Date): string {
-  const x = new Date(d);
+function mondayOf(date: string): string {
+  const x = new Date(`${date}T00:00:00`);
   const day = (x.getDay() + 6) % 7; // 0 = Monday
   x.setDate(x.getDate() - day);
   return x.toISOString().slice(0, 10);
@@ -25,7 +25,28 @@ function fmtMin(min: number): string {
   return `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
 }
 
+function fmtDate(date: string, opts: Intl.DateTimeFormatOptions): string {
+  return new Date(`${date}T00:00:00`).toLocaleDateString(undefined, opts);
+}
+
 const yOf = (min: number) => (min - HOUR_START * 60) * PX_PER_MIN;
+
+// 1 day on phones, 3 on tablets, a full week on desktop.
+function visibleDayCount(): number {
+  if (window.matchMedia("(max-width: 640px)").matches) return 1;
+  if (window.matchMedia("(max-width: 1000px)").matches) return 3;
+  return 7;
+}
+
+function useVisibleDays(): number {
+  const [count, setCount] = useState(visibleDayCount);
+  useEffect(() => {
+    const onResize = () => setCount(visibleDayCount());
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+  return count;
+}
 
 interface DragState {
   date: string;
@@ -36,16 +57,19 @@ interface DragState {
 }
 
 export function AgendaView({ userId, users }: { userId: string; users: UserDto[] }) {
-  const [weekStart, setWeekStart] = useState(() => mondayOf(new Date()));
+  const today = new Date().toISOString().slice(0, 10);
+  const visibleDays = useVisibleDays();
+  const [anchor, setAnchor] = useState(today);
   const [selectedBlock, setSelectedBlock] = useState<ScheduleBlockDto | null>(null);
   const [drag, setDrag] = useState<DragState | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
 
-  const weekEnd = addDays(weekStart, 6);
+  const rangeStart = visibleDays === 7 ? mondayOf(anchor) : anchor;
+  const rangeEnd = addDays(rangeStart, visibleDays - 1);
   const agendaQuery = useQuery({
-    queryKey: ["agenda", userId, weekStart],
-    queryFn: () => api<AgendaDto>(`/api/agenda?from=${weekStart}&to=${weekEnd}`),
+    queryKey: ["agenda", userId, rangeStart, visibleDays],
+    queryFn: () => api<AgendaDto>(`/api/agenda?from=${rangeStart}&to=${rangeEnd}`),
   });
 
   const saveWindow = useMutation({
@@ -63,17 +87,24 @@ export function AgendaView({ userId, users }: { userId: string; users: UserDto[]
   });
 
   const agenda = agendaQuery.data;
-  const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  const days = Array.from({ length: visibleDays }, (_, i) => addDays(rangeStart, i));
   const windowByDate = new Map((agenda?.workWindows ?? []).map((w) => [w.date, w]));
-  const today = new Date().toISOString().slice(0, 10);
 
-  const minutesFromEvent = (e: React.MouseEvent, dayEl: Element): number => {
+  const rangeLabel =
+    visibleDays === 1
+      ? fmtDate(rangeStart, { weekday: "short", day: "numeric", month: "short" })
+      : `${fmtDate(rangeStart, { day: "numeric", month: "short" })} – ${fmtDate(rangeEnd, {
+          day: "numeric",
+          month: "short",
+        })}`;
+
+  const minutesFromEvent = (e: React.PointerEvent, dayEl: Element): number => {
     const rect = dayEl.getBoundingClientRect();
     const raw = (e.clientY - rect.top) / PX_PER_MIN + HOUR_START * 60;
     return Math.round(raw / SNAP) * SNAP;
   };
 
-  const onGridMouseMove = (e: React.MouseEvent) => {
+  const onGridPointerMove = (e: React.PointerEvent) => {
     if (!drag || !gridRef.current) return;
     const dayEl = gridRef.current.querySelector(`[data-date="${drag.date}"]`);
     if (!dayEl) return;
@@ -91,7 +122,7 @@ export function AgendaView({ userId, users }: { userId: string; users: UserDto[]
     });
   };
 
-  const onGridMouseUp = () => {
+  const onGridPointerUp = () => {
     if (drag) {
       saveWindow.mutate({
         date: drag.date,
@@ -105,12 +136,14 @@ export function AgendaView({ userId, users }: { userId: string; users: UserDto[]
   return (
     <div className="agenda">
       <div className="agenda-toolbar">
-        <button onClick={() => setWeekStart(addDays(weekStart, -7))}>‹ Prev</button>
-        <strong>
-          {weekStart} → {weekEnd}
-        </strong>
-        <button onClick={() => setWeekStart(addDays(weekStart, 7))}>Next ›</button>
-        <button onClick={() => setWeekStart(mondayOf(new Date()))}>Today</button>
+        <button aria-label="Previous" onClick={() => setAnchor(addDays(rangeStart, -visibleDays))}>
+          ‹ Prev
+        </button>
+        <strong className="range-label">{rangeLabel}</strong>
+        <button aria-label="Next" onClick={() => setAnchor(addDays(rangeStart, visibleDays))}>
+          Next ›
+        </button>
+        <button onClick={() => setAnchor(today)}>Today</button>
         <span className="hint">Drag the shaded area's edges to set your working hours per day.</span>
       </div>
 
@@ -118,10 +151,12 @@ export function AgendaView({ userId, users }: { userId: string; users: UserDto[]
 
       <div
         className="agenda-grid"
+        style={{ "--day-count": visibleDays } as React.CSSProperties}
         ref={gridRef}
-        onMouseMove={onGridMouseMove}
-        onMouseUp={onGridMouseUp}
-        onMouseLeave={onGridMouseUp}
+        onPointerMove={onGridPointerMove}
+        onPointerUp={onGridPointerUp}
+        onPointerCancel={() => setDrag(null)}
+        onPointerLeave={onGridPointerUp}
       >
         <div className="hour-gutter">
           {Array.from({ length: HOUR_END - HOUR_START }, (_, i) => (
@@ -137,11 +172,7 @@ export function AgendaView({ userId, users }: { userId: string; users: UserDto[]
           return (
             <div key={date} className={`day-col ${date === today ? "today" : ""}`} data-date={date}>
               <div className="day-header">
-                {new Date(`${date}T00:00:00`).toLocaleDateString(undefined, {
-                  weekday: "short",
-                  day: "numeric",
-                  month: "short",
-                })}
+                {fmtDate(date, { weekday: "short", day: "numeric", month: "short" })}
               </div>
               <div className="day-body" style={{ height: (HOUR_END - HOUR_START) * 60 * PX_PER_MIN }}>
                 {win && (
@@ -151,7 +182,7 @@ export function AgendaView({ userId, users }: { userId: string; users: UserDto[]
                       top: yOf(win.startMinutes),
                       height: (win.endMinutes - win.startMinutes) * PX_PER_MIN,
                     }}
-                    onMouseDown={(e) => {
+                    onPointerDown={(e) => {
                       const dayEl = e.currentTarget.closest("[data-date]")!;
                       setDrag({
                         date,
@@ -164,7 +195,7 @@ export function AgendaView({ userId, users }: { userId: string; users: UserDto[]
                   >
                     <div
                       className="window-handle top"
-                      onMouseDown={(e) => {
+                      onPointerDown={(e) => {
                         e.stopPropagation();
                         setDrag({
                           date,
@@ -180,7 +211,7 @@ export function AgendaView({ userId, users }: { userId: string; users: UserDto[]
                     </span>
                     <div
                       className="window-handle bottom"
-                      onMouseDown={(e) => {
+                      onPointerDown={(e) => {
                         e.stopPropagation();
                         setDrag({
                           date,
@@ -201,7 +232,7 @@ export function AgendaView({ userId, users }: { userId: string; users: UserDto[]
                       top: yOf(b.startMinutes),
                       height: Math.max(18, (b.endMinutes - b.startMinutes) * PX_PER_MIN),
                     }}
-                    onMouseDown={(e) => e.stopPropagation()}
+                    onPointerDown={(e) => e.stopPropagation()}
                     onClick={() => setSelectedBlock(selectedBlock?.id === b.id ? null : b)}
                     title={`${b.label} (${fmtMin(b.startMinutes)}–${fmtMin(b.endMinutes)})`}
                   >

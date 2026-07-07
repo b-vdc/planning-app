@@ -61,6 +61,7 @@ body {
   font-family: "Uncut Sans", Arial, Helvetica, sans-serif;
   color: var(--ink);
   background: var(--paper);
+  -webkit-tap-highlight-color: transparent;
 }
 h1, h2, h3 {
   font-family: "Playfair Display", Georgia, serif;
@@ -90,35 +91,45 @@ input, select, textarea {
 label { display: block; margin-bottom: 10px; font-size: 14px; }
 label small { color: var(--muted); }
 
-.centered { display: grid; place-items: center; min-height: 100vh; }
+.centered { display: grid; place-items: center; min-height: 100vh; min-height: 100dvh; padding: 16px; }
 .user-gate { text-align: center; }
 .user-gate .brand-logo { height: 40px; width: auto; margin-bottom: 12px; }
 .user-gate p { font-family: "Uncut Sans", Arial, sans-serif; font-weight: 600; color: var(--accent); }
-.user-gate-buttons { display: flex; gap: 12px; justify-content: center; }
+.user-gate-buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
 .user-gate-buttons button { font-size: 18px; padding: 12px 28px; border-width: 2px; }
 
-.app { max-width: 1280px; margin: 0 auto; padding: 0 16px 40px; }
+.app {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 16px 40px;
+  padding-left: max(16px, env(safe-area-inset-left));
+  padding-right: max(16px, env(safe-area-inset-right));
+}
 header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
   padding: 14px 0;
 }
 .brand-logo { height: 32px; width: auto; min-width: 100px; }
-.header-actions { display: flex; gap: 8px; align-items: center; }
+.header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .header-actions select { width: auto; }
 
 .agenda-toolbar {
   display: flex;
   gap: 10px;
   align-items: center;
+  flex-wrap: wrap;
   margin-bottom: 8px;
 }
+.agenda-toolbar .range-label { white-space: nowrap; }
 .agenda-toolbar .hint { color: var(--muted); font-size: 13px; margin-left: auto; }
 
 .agenda-grid {
   display: grid;
-  grid-template-columns: 56px repeat(7, 1fr);
+  grid-template-columns: var(--gutter-width, 56px) repeat(var(--day-count, 7), 1fr);
   background: #fff;
   border: 1px solid var(--line);
   border-radius: 10px;
@@ -162,6 +173,7 @@ header {
   border-top: 2px solid var(--accent);
   border-bottom: 2px solid var(--accent);
   cursor: grab;
+  touch-action: none; /* let pointer events drive the drag instead of scrolling */
 }
 .window-handle {
   position: absolute;
@@ -169,9 +181,15 @@ header {
   right: 0;
   height: 8px;
   cursor: ns-resize;
+  touch-action: none;
 }
 .window-handle.top { top: -5px; }
 .window-handle.bottom { bottom: -5px; }
+@media (pointer: coarse) {
+  .window-handle { height: 28px; }
+  .window-handle.top { top: -14px; }
+  .window-handle.bottom { bottom: -14px; }
+}
 .window-label {
   position: absolute;
   top: 2px;
@@ -267,3 +285,44 @@ header {
 .chip button { border: none; padding: 0 2px; background: none; color: var(--accent); }
 
 .error { color: #a33; margin: 8px 0; }
+
+/* --- Mobile --- */
+@media (pointer: coarse) {
+  /* Comfortable tap targets on touch devices */
+  button { min-height: 44px; padding: 8px 14px; }
+  .chip button { min-height: 0; }
+  input:not([type="checkbox"]), select { min-height: 44px; }
+  input[type="checkbox"] { width: 22px; height: 22px; }
+}
+
+@media (max-width: 640px) {
+  .app { padding-bottom: 24px; }
+  header { justify-content: center; }
+  .header-actions { justify-content: center; width: 100%; }
+  .header-actions button, .header-actions select { flex: 1 1 auto; }
+
+  .agenda-toolbar { gap: 6px; }
+  .agenda-toolbar .range-label { order: -1; width: 100%; text-align: center; }
+  .agenda-toolbar button { flex: 1 1 auto; }
+  .agenda-toolbar .hint { margin-left: 0; width: 100%; text-align: center; }
+
+  .agenda-grid { --gutter-width: 44px; }
+  .hour-label { font-size: 10px; right: 4px; }
+  .block { font-size: 13px; }
+
+  .block-detail { padding: 12px; }
+  .block-detail li { flex-wrap: wrap; }
+
+  /* Modals become bottom sheets */
+  .modal-backdrop { place-items: end stretch; }
+  .modal {
+    width: 100%;
+    max-height: 92dvh;
+    border-radius: 16px 16px 0 0;
+    padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+  }
+  .modal-actions { position: sticky; bottom: 0; background: #fff; padding-top: 8px; }
+  .modal-actions button { flex: 1 1 auto; }
+
+  .guest-choices { flex-direction: column; gap: 8px; }
+}
