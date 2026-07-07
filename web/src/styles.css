@@ -1,21 +1,72 @@
+@font-face {
+  font-family: "Playfair Display";
+  src: url("https://vandervolpi.com/assets/fonts/Playfair/PlayfairDisplay-VariableFont_wght.ttf") format("truetype");
+  font-weight: 400 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Playfair Display";
+  src: url("https://vandervolpi.com/assets/fonts/Playfair/PlayfairDisplay-Italic-VariableFont_wght.ttf") format("truetype");
+  font-weight: 400 900;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Uncut Sans";
+  src: url("https://vandervolpi.com/assets/fonts/Uncut/UncutSans-Regular.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Uncut Sans";
+  src: url("https://vandervolpi.com/assets/fonts/Uncut/UncutSans-Semibold.otf") format("opentype");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Uncut Sans";
+  src: url("https://vandervolpi.com/assets/fonts/Uncut/UncutSans-Bold.otf") format("opentype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
-  --ink: #23303a;
-  --muted: #6b7a86;
-  --line: #dde4e9;
-  --paper: #f7f8f9;
-  --accent: #2f6f8f;
-  --accent-soft: #e3eef4;
-  --event: #b56548;
-  --event-soft: #f6e8e2;
-  --window: rgba(47, 111, 143, 0.08);
+  /* Van der Volpi brand palette (see vdv-brandbook) */
+  --vdv-orange: #ed5221;
+  --vdv-eggplant: #6b004a;
+  --vdv-darkbrown: #3f2a25;
+  --vdv-offwhite: #fffdee;
+  --vdv-orange-80: #fbdcd3;
+  --vdv-eggplant-80: #e1ccdb;
+  --vdv-periwinkle-80: #eff2ff;
+
+  --ink: var(--vdv-darkbrown);
+  --muted: rgba(63, 42, 37, 0.6);
+  --line: var(--vdv-eggplant-80);
+  --paper: var(--vdv-offwhite);
+  --accent: var(--vdv-eggplant);
+  --accent-soft: var(--vdv-periwinkle-80);
+  --event: var(--vdv-orange);
+  --event-soft: var(--vdv-orange-80);
+  --window: rgba(107, 0, 74, 0.08);
 }
 
 * { box-sizing: border-box; }
 body {
   margin: 0;
-  font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: "Uncut Sans", Arial, Helvetica, sans-serif;
   color: var(--ink);
   background: var(--paper);
+}
+h1, h2, h3 {
+  font-family: "Playfair Display", Georgia, serif;
+  font-weight: 700;
+  color: var(--accent);
+  margin: 0 0 0.5em;
 }
 button {
   font: inherit;
@@ -23,10 +74,11 @@ button {
   border: 1px solid var(--line);
   border-radius: 6px;
   background: #fff;
+  color: var(--ink);
   cursor: pointer;
 }
-button:hover { border-color: var(--accent); }
-button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button:hover { border-color: var(--vdv-orange); }
+button.primary { background: var(--vdv-orange); border-color: var(--vdv-orange); color: var(--vdv-offwhite); font-weight: 600; }
 button:disabled { opacity: 0.5; cursor: default; }
 input, select, textarea {
   font: inherit;
@@ -40,6 +92,8 @@ label small { color: var(--muted); }
 
 .centered { display: grid; place-items: center; min-height: 100vh; }
 .user-gate { text-align: center; }
+.user-gate .brand-logo { height: 40px; width: auto; margin-bottom: 12px; }
+.user-gate p { font-family: "Uncut Sans", Arial, sans-serif; font-weight: 600; color: var(--accent); }
 .user-gate-buttons { display: flex; gap: 12px; justify-content: center; }
 .user-gate-buttons button { font-size: 18px; padding: 12px 28px; border-width: 2px; }
 
@@ -50,7 +104,7 @@ header {
   justify-content: space-between;
   padding: 14px 0;
 }
-header h1 { font-size: 20px; margin: 0; letter-spacing: 0.02em; }
+.brand-logo { height: 32px; width: auto; min-width: 100px; }
 .header-actions { display: flex; gap: 8px; align-items: center; }
 .header-actions select { width: auto; }
 
@@ -80,7 +134,7 @@ header h1 { font-size: 20px; margin: 0; letter-spacing: 0.02em; }
   color: var(--muted);
 }
 .day-col { border-left: 1px solid var(--line); }
-.day-col.today .day-header { background: var(--accent-soft); }
+.day-col.today .day-header { background: var(--accent-soft); color: var(--accent); }
 .day-header {
   height: 34px;
   display: grid;
@@ -135,10 +189,11 @@ header h1 { font-size: 20px; margin: 0; letter-spacing: 0.02em; }
   overflow: hidden;
   cursor: pointer;
   border: 1px solid transparent;
+  color: var(--accent);
 }
 .block.todo_batch { background: var(--accent-soft); border-color: var(--accent); }
 .block.event { background: var(--event-soft); border-color: var(--event); }
-.block.selected { outline: 2px solid var(--ink); }
+.block.selected { outline: 2px solid var(--vdv-orange); }
 .block-time { font-weight: 600; opacity: 0.7; }
 
 .block-detail {
@@ -161,7 +216,7 @@ header h1 { font-size: 20px; margin: 0; letter-spacing: 0.02em; }
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(20, 30, 38, 0.45);
+  background: rgba(63, 42, 37, 0.45);
   display: grid;
   place-items: center;
   z-index: 10;
@@ -184,7 +239,7 @@ header h1 { font-size: 20px; margin: 0; letter-spacing: 0.02em; }
   background: #fff;
   border: 1px solid var(--line);
   border-radius: 8px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 6px 18px rgba(63, 42, 37, 0.18);
   display: flex;
   flex-direction: column;
   min-width: 220px;
@@ -204,10 +259,11 @@ header h1 { font-size: 20px; margin: 0; letter-spacing: 0.02em; }
 .chip {
   background: var(--accent-soft);
   border: 1px solid var(--accent);
+  color: var(--accent);
   border-radius: 12px;
   padding: 2px 8px;
   font-size: 12px;
 }
-.chip button { border: none; padding: 0 2px; background: none; }
+.chip button { border: none; padding: 0 2px; background: none; color: var(--accent); }
 
 .error { color: #a33; margin: 8px 0; }

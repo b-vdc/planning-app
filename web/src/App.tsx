@@ -38,7 +38,11 @@ export default function App() {
     return (
       <div className="centered">
         <div className="user-gate">
-          <h1>Van der Volpi</h1>
+          <img
+            className="brand-logo"
+            src="https://vandervolpi.com/assets/logo/VDV_Logo2_oranje_RGB.png"
+            alt="Van der Volpi"
+          />
           <p>Who are you?</p>
           <div className="user-gate-buttons">
             {users.map((u) => (
@@ -55,7 +59,11 @@ export default function App() {
   return (
     <div className="app">
       <header>
-        <h1>Van der Volpi</h1>
+        <img
+          className="brand-logo"
+          src="https://vandervolpi.com/assets/logo/VDV_Logo2_oranje_RGB.png"
+          alt="Van der Volpi"
+        />
         <div className="header-actions">
           <button className="primary" onClick={() => setShowItemForm(true)}>
             + New item
